@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <title>FM Index</title>
+</head>
+
+<body>
+    <div class="main-container">
+        {% if jsonData is defined %}
+        <div id="plot-wrapper" class="plot-wrapper" data-plot="{{ jsonData }}">
+            <canvas style="width: 500px;" id="plot-canvas"></canvas>
+        </div>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        let plotWrapper = document.getElementById('plot-wrapper')
+        let dataString = plotWrapper.getAttribute('data-plot')
+        let data = {};
+        try {
+            data = JSON.parse(dataString);
+        } catch (e) {
+            console.error('Could not parse plot data')
+        }
+
+        if (data.plot_data && data.plot_data.ms && data.plot_data.ts) {
+            const trendChart = new Chart(document.getElementById('plot-canvas'),{
+                type: 'line',
+                data: {
+                    labels: data.plot_data.ms,
+                    datasets: [
+                        {
+                            label: "Genome Sequences (n=" + data.text_length + ")",
+                            data: data.plot_data.ts
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Match time (s)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Pattern length'
+                            }
+                        }
+                    }
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>

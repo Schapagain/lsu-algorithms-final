@@ -55,7 +55,8 @@ class FMIndex:
       try:
         currCharIdx = self._charToIdx[pattern[i]]
       except:
-        raise SyntaxError("pattern includes at least one character that's not in the character set of the FM Index")
+        # current character is not in the character set
+        return 0
       start_rank = self._waveletTree.getRank(currCharIdx,sp)
       end_rank = self._waveletTree.getRank(currCharIdx,ep)
 

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <title>FM Index</title>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="form-container">
+            <div class="main-text">
+                <h1>FM Index has been created for the text. Enter a pattern to search.</h1>
+                <h3 class="sub-text">{{ character_set  }}</h3>
+            </div>
+            <form method="post">
+                <div class="form-control">
+                    <label for="pattern-input"></label>
+                    {% if query %}
+                    <input required autocomplete="off" id="pattern-input" name="q" type="text" value="{{ query }}">
+                    {% else %}
+                    <input required autocomplete="off" id="pattern-input" name="q" type="text">
+                    {% endif %}
+                    <button type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+        <div class="results-container">
+            {% if count is defined %}
+            <p>{{ count if count > 0 else 'No' }} results were found for your query in {{ '%0.3f' % t_span|float }} seconds.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        let inputEl = document.getElementById('pattern-input')
+        
+        inputEl.addEventListener('focus',function(){
+            setTimeout(()=>{ this.selectionStart = this.selectionEnd = 10000; }, 0);
+        })
+
+        inputEl.focus()
+        
+    </script>
+</body>
+
+</html>
