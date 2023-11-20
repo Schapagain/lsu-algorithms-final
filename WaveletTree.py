@@ -60,11 +60,20 @@ class WaveletTree:
           "left": [],
           "right": []
       }
+      ranks = []
+      runningRank = 0
       for i in node_indexes:
         in_left_child = text[i] < character_set[mid]
+
+        # Pre-compute ranks and store at block boundaries
+        if block_size is not None:
+          if not i % block_size:
+            ranks.append(runningRank)
+          runningRank += 0 if in_left_child else 1
+
         bit_vector.append(1-int(in_left_child))
         child_indexes["left" if in_left_child else "right"].append(i)
-      node = Node(chrlo,chrhi,bit_vector=bit_vector,depth=depth,block_size=block_size)
+      node = Node(chrlo,chrhi,bit_vector=bit_vector,depth=depth,block_size=block_size,ranks=ranks)
       node.left = self._buildTree(text,character_set,block_size,chrlo,mid,child_indexes["left"],depth=depth+1)
       node.right = self._buildTree(text,character_set,block_size,mid,chrhi,child_indexes["right"],depth=depth+1)
       return node
@@ -103,7 +112,7 @@ class WaveletTree:
 class Node:
 
     maxVecPrintLength = 15 # Only print the first few bits
-    def __init__(self,chrlo:int,chrhi:int,bit_vector:list[int] = None,block_size: int = None,depth: int = 0) -> None:
+    def __init__(self,chrlo:int,chrhi:int,bit_vector:list[int] = None,ranks: list[int] = [],block_size:int = None,depth: int = 0) -> None:
         '''
         :param str A list of 0s and 1s [TODO] Change to accept a true bitvector
         '''
@@ -115,11 +124,8 @@ class Node:
         self._left = None
         self._right = None
         self._depth = depth
-
-        if block_size is not None:
-          self._ranks = []
-        else:
-          self._ranks = None
+        self._block_size = block_size
+        self._ranks = ranks
 
     def __repr__(self) -> str:
       sentinel = "--"* 15
@@ -167,13 +173,36 @@ class Node:
       if idx > self._size:
         raise ValueError(f"Cannot get rank at index {idx}. Idx can be at most {self._size}")
 
-      rank = 0
       mid = self._chrlo + math.ceil((self._chrhi - self._chrlo) / 2)
-      rank = sum([1 if charIdx < mid and self._bit_vector[i] == 0 or charIdx >= mid and self._bit_vector[i] == 1 else 0 for i in range(idx)])
 
+      prevBoundaryIdxInText = -1
+      prevBoundaryRank = 0
+
+      if self._block_size is not None:
+        prevBoundaryIdxInText = (idx - idx % self._block_size)
+        prevBoundaryIdxInRanks = prevBoundaryIdxInText // self._block_size
+
+        if (prevBoundaryIdxInRanks >= len(self._ranks)):
+          prevBoundaryRank = 0
+          prevBoundaryIdxInText = 0
+        else:
+          prevBoundaryRank = self._ranks[prevBoundaryIdxInRanks]
+
+      walkingRank = self._getWalkingRank(prevBoundaryIdxInText+1,idx)
+
+      if charIdx < mid:
+        rank = (idx - walkingRank - prevBoundaryRank)
+      else:
+        rank = walkingRank + prevBoundaryRank
       node = self
       if charIdx < mid:
         rank = self.left.getRank(charIdx,rank)
       else:
         rank = self.right.getRank(charIdx,rank)
       return rank
+    
+    def _getWalkingRank(self,i,j):
+      '''
+      Walk from i -> j and get the rank of 1 from bit_vector[i:j]
+      '''
+      return sum([self._bit_vector[k] for k in range(i,j)])
