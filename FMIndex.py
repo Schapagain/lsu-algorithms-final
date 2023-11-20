@@ -11,7 +11,7 @@ class FMIndex:
   Space: O(|WaveletTree| + 2Σ )
   '''
   @timer_func
-  def __init__(self,text:str,character_set:str,debug:bool = False):
+  def __init__(self,text:str,character_set:str,block_size:int = 1,debug:bool = False):
     self._text_size = len(text)
     # Stores the mapping: character -> character index in the lexicographically ordered set
     self._charToIdx = dict(zip(character_set,range(len(character_set))))
@@ -20,7 +20,7 @@ class FMIndex:
     # among all the sorted suffixes
     self._skip_count = [0] * len(character_set)
     bwt = self._buildBWTandSkipCounts(text)
-    self._waveletTree = WaveletTree(bwt,character_set)
+    self._waveletTree = WaveletTree(bwt,character_set,block_size=block_size)
 
   def _buildBWTandSkipCounts(self,text:str):
     '''
