@@ -26,12 +26,12 @@ class WaveletTree:
     maxPrintDepth = 3 # Only print the first few levels of the tree
     maxTextPrintLength = 15 # Only print the first few text characters
     @timer_func
-    def __init__(self,text: str, character_set: str, get_block_size = None,debug:bool = False) -> None:
+    def __init__(self,text: str, character_set: str, block_size = None,debug:bool = False) -> None:
       '''
         Build a wavelet tree that supports efficient rank_i(j) queries
         :param str text: string to represent as a Wavelet Tree
         :param str character_set: an ordered string of all possible characters
-        :param function get_block_size: size of the blocks as a function of the length of the text, n
+        :param function block_size: size of the blocks. Rank values are pre-computed at block boundaries
       '''
       self._size = len(text)
       self._character_size = len(character_set)
@@ -39,19 +39,13 @@ class WaveletTree:
         raise ValueError("Character set cannot have duplicate characters")
       if len(character_set) < 2:
         raise ValueError("Character set must have at least two unique characters")
-      if not get_block_size == None:
-        try:
-          self._block_size = get_block_size(self._size)
-        except:
-          self._block_size = None
-          warnings.warn("Could not use the provided function to get block size. Block size has been set to None")
-      self._root = self._buildTree(text,character_set,0,self._character_size,range(self._size))
+      self._root = self._buildTree(text,character_set,block_size,0,self._character_size,range(self._size))
 
     @property
     def root(self):
       return self._root
 
-    def _buildTree(self,text:str,character_set:str,chrlo: int,chrhi: int, node_indexes: list[int],depth: int = 0):
+    def _buildTree(self,text:str,character_set:str,block_size:int,chrlo: int,chrhi: int, node_indexes: list[int],depth: int = 0):
       '''
         Recursively build the tree by partitioning the character_set using chrlo and chrhi
       '''
@@ -59,7 +53,7 @@ class WaveletTree:
 
       # Leaf node
       if chrlo == mid or chrhi == mid:
-        return Node(chrlo,chrhi,bit_vector=[0]*len(node_indexes),depth=depth)
+        return Node(chrlo,chrhi,bit_vector=[0]*len(node_indexes),depth=depth,block_size=block_size)
 
       bit_vector = []
       child_indexes = {
@@ -70,9 +64,9 @@ class WaveletTree:
         in_left_child = text[i] < character_set[mid]
         bit_vector.append(1-int(in_left_child))
         child_indexes["left" if in_left_child else "right"].append(i)
-      node = Node(chrlo,chrhi,bit_vector=bit_vector,depth=depth)
-      node.left = self._buildTree(text,character_set,chrlo,mid,child_indexes["left"],depth=depth+1)
-      node.right = self._buildTree(text,character_set,mid,chrhi,child_indexes["right"],depth=depth+1)
+      node = Node(chrlo,chrhi,bit_vector=bit_vector,depth=depth,block_size=block_size)
+      node.left = self._buildTree(text,character_set,block_size,chrlo,mid,child_indexes["left"],depth=depth+1)
+      node.right = self._buildTree(text,character_set,block_size,mid,chrhi,child_indexes["right"],depth=depth+1)
       return node
 
     @timer_func
@@ -122,7 +116,7 @@ class Node:
         self._right = None
         self._depth = depth
 
-        if block_size:
+        if block_size is not None:
           self._ranks = []
         else:
           self._ranks = None
