@@ -19,7 +19,7 @@ class WaveletTree:
     tree.getRank(2,5) <-> rank_c(5)
 
     Stores n bits at every depth => O(nlgΣ) bits space
-    
+
     [TODO] If we pre-compute and store ranks at block boundaries,
     additional space is used. Need to factor this in to find the total space used.
     '''
@@ -73,6 +73,8 @@ class WaveletTree:
 
         bit_vector.append(1-int(in_left_child))
         child_indexes["left" if in_left_child else "right"].append(i)
+      ranks.append(runningRank)
+
       node = Node(chrlo,chrhi,bit_vector=bit_vector,depth=depth,block_size=block_size,ranks=ranks)
       node.left = self._buildTree(text,character_set,block_size,chrlo,mid,child_indexes["left"],depth=depth+1)
       node.right = self._buildTree(text,character_set,block_size,mid,chrhi,child_indexes["right"],depth=depth+1)
@@ -170,8 +172,8 @@ class Node:
 
     def getRank(self,charIdx,idx):
       if self._is_leaf: return idx
-      if idx > self._size:
-        raise ValueError(f"Cannot get rank at index {idx}. Idx can be at most {self._size}")
+      if idx > self._size + 1:
+        raise ValueError(f"Cannot get rank at index {idx}. Idx can be at most {self._size + 1}")
 
       mid = self._chrlo + math.ceil((self._chrhi - self._chrlo) / 2)
 
@@ -200,7 +202,7 @@ class Node:
       else:
         rank = self.right.getRank(charIdx,rank)
       return rank
-    
+
     def _getWalkingRank(self,i,j):
       '''
       Walk from i -> j and get the rank of 1 from bit_vector[i:j]
