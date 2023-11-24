@@ -13,11 +13,12 @@
     <div class="main-container">
         {% if jsonData is defined %}
         <div id="plot-wrapper" class="plot-wrapper" data-plot="{{ jsonData }}">
-            <canvas style="width: 500px;" id="plot-canvas"></canvas>
+            <canvas style="width: 100%;" id="plot-canvas"></canvas>
         </div>
         {% endif %}
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline@2.0.5/src/chartjs-plugin-trendline.min.js"></script>
     <script>
         let plotWrapper = document.getElementById('plot-wrapper')
         let dataString = plotWrapper.getAttribute('data-plot')
@@ -30,13 +31,20 @@
 
         if (data.plot_data && data.plot_data.ms && data.plot_data.ts) {
             const trendChart = new Chart(document.getElementById('plot-canvas'),{
-                type: 'line',
+                type: 'scatter',
                 data: {
                     labels: data.plot_data.ms,
                     datasets: [
                         {
-                            label: "Genome Sequences (n=" + data.text_length + ")",
-                            data: data.plot_data.ts
+                            label: data.title || "Default dataset",
+                            data: data.plot_data.ts,
+                            trendlineLinear: {
+                                colorMin: "red",
+                                colorMax: "green",
+                                lineStyle: "dotted|solid",
+                                width: 2,
+                                projection: true
+                            }
                         }
                     ]
                 },
@@ -45,14 +53,14 @@
                         y: {
                             title: {
                                 display: true,
-                                text: 'Match time (s)'
-                            }
+                                text: data.y_label
+                            },
                         },
                         x: {
                             title: {
                                 display: true,
-                                text: 'Pattern length'
-                            }
+                                text: data.x_label
+                            },
                         }
                     }
                 }
