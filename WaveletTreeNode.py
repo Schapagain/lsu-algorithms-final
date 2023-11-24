@@ -21,7 +21,7 @@ class Node:
       sentinel = "--"* 15
       s = f'{sentinel}\nNode:\n  Type: {"leaf" if self._is_leaf else "internal"}\n  Char Range: {self._chrlo} -> {self._chrhi}\n'
       if not self._is_leaf:
-        s+= f'  Bit Vector: {"-".join(map(str,self._bit_vector[:MAX_VEC_PRINT_LENGTH]))}{"..." if self._size > MAX_VEC_PRINT_LENGTH else ""}\n{sentinel}\n'
+        s+= f'  Bit Vector: {"".join(map(str,[ self._getBit(i) for i in range(min(self._size,MAX_VEC_PRINT_LENGTH))]))}{"..." if self._size > MAX_VEC_PRINT_LENGTH else ""}\n{sentinel}\n'
       return s
 
     @property
@@ -63,17 +63,30 @@ class Node:
       Extract bit at index i from the BitVector
       '''
       if (i >= self._size):
-        raise (f'Cannot get bit at index {i}. Max index is {self._size - 1}')
+        raise SyntaxError(f'Cannot get bit at index {i}. Max index is {self._size - 1}')
+      
+      # print(f'getting bit {i}, vec: {self._bit_vector}')
 
       packedIndex = i // BIT_PACK_SIZE
       bitIndex = i % BIT_PACK_SIZE
       packedInt = self._bit_vector[packedIndex]
-      return packedInt >> (BIT_PACK_SIZE - bitIndex - 1)
+      return packedInt >> (BIT_PACK_SIZE - bitIndex - 1) & 1
 
     def getRank(self,charIdx,idx):
+      # print(f'getting rank of {charIdx} at {idx}.')
+      # print('my size:',self._size)
+      # print('ranks:',self._ranks,'block_size:',self._block_size)
+      '''
+      Recursively get the rank of the charIdx-th character in the character set at position idx in the current node
+      '''
       if self._is_leaf: return idx
-      if idx > self._size + 1:
-        raise ValueError(f"Cannot get rank at index {idx}. Idx can be at most {self._size + 1}")
+      if idx > self._size:
+        raise ValueError(f"Cannot get rank at index {idx}. Idx can be at most {self._size}")
+      if charIdx < self._chrlo or charIdx >= self._chrhi:
+        raise ValueError(f"Cannot get rank of char-{charIdx}. There are only {self._chrhi - self._chrlo} characters in this node")
+
+      # rank of any character is 0 at the first index
+      if (idx == 0): return 0
 
       mid = self._chrlo + math.ceil((self._chrhi - self._chrlo) / 2)
 
@@ -83,20 +96,18 @@ class Node:
       if self._block_size is not None:
         prevBoundaryIdxInText = (idx - idx % self._block_size)
         prevBoundaryIdxInRanks = prevBoundaryIdxInText // self._block_size
-
         if (prevBoundaryIdxInRanks >= len(self._ranks)):
           prevBoundaryRank = 0
           prevBoundaryIdxInText = 0
         else:
           prevBoundaryRank = self._ranks[prevBoundaryIdxInRanks]
 
-      walkingRank = self._getWalkingRank(prevBoundaryIdxInText+1,idx)
+      walkingRank = self._getWalkingRank(prevBoundaryIdxInText,idx)
 
       if charIdx < mid:
         rank = (idx - walkingRank - prevBoundaryRank)
       else:
         rank = walkingRank + prevBoundaryRank
-      node = self
       if charIdx < mid:
         rank = self.left.getRank(charIdx,rank)
       else:

@@ -64,27 +64,33 @@ class WaveletTree:
       }
       ranks = []
       runningRank = 0
-      runningBits = []
-      for i in node_indexes:
+      runningBits = [0] * BIT_PACK_SIZE
+      runningBitsCtr = 0
+      for j,i in enumerate(node_indexes):
         in_right_child = text[i] >= character_set[mid]
 
         # Pre-compute ranks and store at block boundaries
         if block_size is not None:
-          if not i % block_size:
+          if not j % block_size:
             ranks.append(runningRank)
           runningRank += int(in_right_child)
         
         # Pack bits and store as ints of size INT_SIZE
-        runningBits.append(int(in_right_child))
-        if len(runningBits) == BIT_PACK_SIZE or i == node_indexes[-1]:
+        runningBits[runningBitsCtr] = int(in_right_child)
+        runningBitsCtr += 1
+        if runningBitsCtr == BIT_PACK_SIZE or i == node_indexes[-1]:
           bit_vector.append(getIntFromBits(runningBits))
-          runningBits.clear()
+          # print(f'adding bits:: {runningBits}')
+          runningBits = [0] * BIT_PACK_SIZE
+          runningBitsCtr = 0
 
         child_indexes["right" if in_right_child else "left"].append(i)
 
-      # Capture stray rank for the last entry
-      ranks.append(runningRank)
-
+      # If the length of the text is a multiple of block_size
+      # Add an extra rank at the end
+      if not (j+1) % block_size:
+        ranks.append(runningRank)
+     
       node = Node(chrlo,chrhi,bit_vector=bit_vector,size=len(node_indexes),depth=depth,block_size=block_size,ranks=ranks)
       node.left = self._buildTree(text,character_set,block_size,chrlo,mid,child_indexes["left"],depth=depth+1)
       node.right = self._buildTree(text,character_set,block_size,mid,chrhi,child_indexes["right"],depth=depth+1)
