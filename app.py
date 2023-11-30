@@ -3,8 +3,9 @@ from FMIndex import FMIndex
 from time import time
 import json
 from random import randint,choice
-from math import floor
+from math import floor, log2
 import os
+
 
 META_CHAR = '$'
 text = ""
@@ -14,7 +15,7 @@ sample_data_path = '../sample-data/dna.50MB'
 if (os.path.isfile(sample_data_path)):
     with open(sample_data_path) as f:
         i = 0
-        for line in f.readlines()[:2]:
+        for line in f.readlines()[:4]:
             i+=1
             line = line.strip()
             print('read line:',i,'length:',len(line))
@@ -105,11 +106,12 @@ def trends():
     else:
         data['x_label'] = "Block Size"
         data['y_label'] =  "Query Time (s)"
-        data['title'] =  "Query Time vs Block Size on DNA Dataset"
         n = len(text)
-        block_sizes = [1+diff for diff in range(5000,n//2,5000)]
-        num_repeats = 3
+        data['title'] =  f"Query Time vs Block Size on DNA Dataset (n={n})"
+        block_sizes = [log2(n),log2(n)**2,log2(n)**3]
+        num_repeats = 2
         for i,b in enumerate(block_sizes):
+            b = int(b)
             currIndex = FMIndex(text,character_set=character_set,debug=True, block_size=b)
             time_elapsed = 0
             for _ in range(num_repeats):
@@ -122,7 +124,7 @@ def trends():
                 t2 = time()
                 time_elapsed+= (t2-t1)
             data['plot_data']['ms'].append(b)
-            data['plot_data']['ts'].append("{:.7f}".format(time_elapsed/num_repeats))
+            data['plot_data']['ts'].append("{:.7f}time".format(time_elapsed/num_repeats))
             print(f'Block #{i} / {len(block_sizes)} blocks')
 
 

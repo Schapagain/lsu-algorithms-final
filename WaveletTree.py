@@ -51,11 +51,10 @@ class WaveletTree:
         Recursively build the tree by partitioning the character_set using chrlo and chrhi
       '''
       mid = chrlo + math.ceil((chrhi - chrlo) / 2)
-      bit_vector_size = math.ceil(len(node_indexes)/ BIT_PACK_SIZE)
 
       # Leaf node
       if chrlo == mid or chrhi == mid:
-        return Node(chrlo,chrhi,bit_vector=[0]*bit_vector_size,size=len(node_indexes),depth=depth,block_size=block_size)
+        return Node(chrlo,chrhi,size=len(node_indexes),depth=depth,block_size=block_size)
 
       bit_vector = []
       child_indexes = {
@@ -88,7 +87,7 @@ class WaveletTree:
 
       # If the length of the text is a multiple of block_size
       # Add an extra rank at the end
-      if not (j+1) % block_size:
+      if block_size is not None and not (j+1) % block_size:
         ranks.append(runningRank)
      
       node = Node(chrlo,chrhi,bit_vector=bit_vector,size=len(node_indexes),depth=depth,block_size=block_size,ranks=ranks)
